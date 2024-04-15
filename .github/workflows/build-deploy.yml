@@ -3,6 +3,8 @@ name: Build and Deploy
 on:
   push:
     branches: [main]
+  workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -37,33 +39,33 @@ jobs:
           path: one-night.tar
           overwrite: true
           retention-days: 3
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v4
-      - name: Write SSH Keys
-        run: |
-          mkdir -p ~/.ssh          
-          chmod 700 ~/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan -H "${{ secrets.SSH_HOST }}" > ~/.ssh/known_hosts
-          chmod 644 ~/.ssh/known_hosts
-      - name: Download Bundle
-        uses: actions/download-artifact@v4
-        with:
-          name: one-night-${{ github.sha }}
-      - name: Copy build files
-        run: |
-          sftp ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} <<< '
-            put one-night.tar 
-          '
-      - name: Start Server
-        run: |
-          ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} <<< '
-            tar -xf one-night.tar
-            kill $(lsof -t -i:8080)
-            cd server
-            nohup ./zig-out/bin/zig-server > logs.out 2>&1 &
-          '
+  # deploy:
+  #   runs-on: ubuntu-latest
+  #   needs: build
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Write SSH Keys
+  #       run: |
+  #         mkdir -p ~/.ssh          
+  #         chmod 700 ~/.ssh
+  #         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+  #         chmod 600 ~/.ssh/id_rsa
+  #         ssh-keyscan -H "${{ secrets.SSH_HOST }}" > ~/.ssh/known_hosts
+  #         chmod 644 ~/.ssh/known_hosts
+  #     - name: Download Bundle
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: one-night-${{ github.sha }}
+  #     - name: Copy build files
+  #       run: |
+  #         sftp ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} <<< '
+  #           put one-night.tar 
+  #         '
+  #     - name: Start Server
+  #       run: |
+  #         ssh ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} <<< '
+  #           tar -xf one-night.tar
+  #           kill $(lsof -t -i:8080)
+  #           cd server
+  #           nohup ./zig-out/bin/zig-server > logs.out 2>&1 &
+  #         '
